@@ -35,6 +35,7 @@ case(apb_st)
 APB_SETUP: begin : apb_setup_st
     prdata  <= '0;
     pready  <= 1'b0;
+    pslverr <= 1'b0;
     if (psel && !penable) begin
         if (pwrite == 1'b1) apb_st <= APB_W_ENABLE;
         else                apb_st <= APB_R_ENABLE;
@@ -46,7 +47,12 @@ APB_W_ENABLE: begin : apb_w_en_st
         pready <= 1'b1;
         case (paddr[7:0])
             8'h0: begin
-                register_with_some_name <= pwdata;   // <-- потом затрётся!
+                if (pwdata[0] == 1'b0)                  // проверяем МЛАДШИЙ БИТ ДАННЫХ
+                    register_with_some_name <= 32'hAAAA_AAAA;
+                else
+                    register_with_some_name <= 32'h5555_5555;
+                $display("APB WRITE 0x00: id=0x%h  (pwdata[0]=%b)",
+                         pwdata, pwdata[0]);
             end
             8'h4: begin end                          // пусто
             8'h8: begin end                          // пусто
@@ -76,19 +82,9 @@ pslverr <= 1'b1;
 end
 endcase
 
-// можем выполнить какие-то действия здесь
-//if (penable==1'b0)
-if (register_with_some_name[0] == 1'b0)
-begin
-register_with_some_name <= 32'hAAAA_AAAA;
-end
-else
-begin
-register_with_some_name <= 32'h5555_5555;
+
 end
 
 
-
-end // закончился блок внутри always
 
 endmodule
